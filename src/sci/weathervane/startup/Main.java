@@ -4,6 +4,9 @@ import java.util.Calendar;
 
 import sci.weathervane.database.DatabaseManager;
 import sci.weathervane.downloaders.DownloadManager;
+import sci.weathervane.downloaders.Run;
+import sci.weathervane.downloaders.Run.FORECAST;
+import sci.weathervane.downloaders.Run.RUN;
 import sci.weathervane.downloaders.Simulation;
 import sci.weathervane.downloaders.DownloadableFactory;
 import sci.weathervane.services.*;
@@ -16,31 +19,18 @@ public class Main
 	 */
 	public static void main(String[] args) 
 	{
-//		DatabaseManager.ClearTable("simulation");
-//		AddAutomaticSimulations();
-		DownloadManager.StartDownloadManager();
+		DatabaseManager.ClearTable("simulation");
+		DownloadRuns();
+//		DownloadManager.StartDownloadManager();
 	}
 	
-	private static void AddAutomaticSimulations()
+	private static void DownloadRuns()
 	{
-		for (Simulation.RUN run : Simulation.RUN.values())
+		for (RUN run : RUN.values())
 		{
 			Calendar calendar = Calendar.getInstance();
-			for (Simulation.SIMULATE_MODEL model : Simulation.SIMULATE_MODEL.values())
-			{
-				for (Simulation.RESOLUTION resolution : Simulation.RESOLUTION.values())
-				{
-					for (Simulation.PERTURBATION perturbation : Simulation.PERTURBATION.values())
-					{
-						for (Simulation.FORCAST_HOUR forcast_hour : Simulation.FORCAST_HOUR.values())
-						{
-							
-							Simulation simulation = new Simulation(calendar, run, model, resolution, perturbation, forcast_hour, false, true);
-							DatabaseManager.InsertSimulation(simulation); // insert the simulation into the database
-						}
-					}
-				}
-			}
+			Run run_obj = new Run(calendar, run, FORECAST.SREF, true);
+			run_obj.DownloadAndProcessSimulations();
 		}
 	}
 

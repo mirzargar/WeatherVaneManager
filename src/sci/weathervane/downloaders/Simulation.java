@@ -1,6 +1,9 @@
 package sci.weathervane.downloaders;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.sql.Date;
 import java.util.Calendar;
@@ -8,32 +11,20 @@ import java.util.Calendar;
 import org.apache.commons.io.*;
 
 import sci.weathervane.database.DatabaseManager;
+import sci.weathervane.downloaders.Run.VAR;
 
 public class Simulation 
 {
 	public static final String DOWNLOADS_PATH = "/tmp/weathervane/";
 	
 	private int m_id;
-	private Calendar m_run_date;
-	private RUN m_run;
+	private Run m_run;
 	private SIMULATE_MODEL m_simulate_model;
 	private RESOLUTION m_resolution;
 	private PERTURBATION m_perturbation;
-	private FORCAST_HOUR m_forcast_hour;
+	private FORCAST_HOUR m_forecast_hour;
 	private boolean m_priority;
 	private boolean m_repeat;
-	
-	public enum RUN
-	{
-		RUN_03 ("03"),
-		RUN_09 ("09"),
-		RUN_15 ("15"),
-		RUN_21 ("21");
-		
-		private final String run;
-		RUN(String run) { this.run = run; }
-	    public String getValue() { return run; }
-	}
 	
 	public enum SIMULATE_MODEL 
 	{
@@ -76,7 +67,7 @@ public class Simulation
 	    N3 ("n3"),
 	    P1 ("p1"),
 	    P2 ("p2"),
-	    p3 ("p3");
+	    P3 ("p3");
 
 	    private final String name;       
 
@@ -142,9 +133,9 @@ public class Simulation
 		return m_id;
 	}
 	
-	public String GetRun()
+	public Run GetRun()
 	{
-		return m_run.getValue();
+		return m_run;
 	}
 	
 	public String GetModel()
@@ -162,14 +153,14 @@ public class Simulation
 		return m_perturbation.getValue();
 	}
 	
-	public long GetRunDateInMilliseconds()
-	{
-		return m_run_date.getTimeInMillis();
-	}
+//	public long GetRunDateInMilliseconds()
+//	{
+//		return m_run.GetRunDateInMilliseconds();
+//	}
 	
 	public String GetForcastHour()
 	{
-		return m_forcast_hour.getValue(); 
+		return m_forecast_hour.getValue(); 
 	}
 	
 	public boolean GetPriority()
@@ -182,14 +173,13 @@ public class Simulation
 		return m_repeat;
 	}
 	
-	public Simulation(Calendar _day, RUN _run, SIMULATE_MODEL _simulate_model, RESOLUTION _resolution, PERTURBATION _perturbation, FORCAST_HOUR _forcast_hour, boolean _priority, boolean _repeat)
+	public Simulation(Run _run, SIMULATE_MODEL _simulate_model, RESOLUTION _resolution, PERTURBATION _perturbation, FORCAST_HOUR _forcast_hour, boolean _priority, boolean _repeat)
 	{
-		this.m_run_date = _day;
 		this.m_run = _run;
 		this.m_simulate_model = _simulate_model;
 		this.m_resolution = _resolution;
 		this.m_perturbation = _perturbation;
-		this.m_forcast_hour = _forcast_hour;
+		this.m_forecast_hour = _forcast_hour;
 		this.m_priority = _priority;
 		this.m_repeat = _repeat;
 	}
@@ -216,12 +206,12 @@ public class Simulation
 	public void Download() 
 	{
 		DownloadFile(GenerateURL(), GetFileName());
-		DatabaseManager.DeleteSimulation(this);
-		if (m_repeat)
-		{
-			this.m_run_date.add(Calendar.HOUR, 24); // add 24 hours to the run date
-			DatabaseManager.InsertSimulation(this);
-		}
+//		DatabaseManager.RemoveSimulation(this);
+//		if (m_repeat)
+//		{
+//			this.m_run_date.add(Calendar.HOUR, 24); // add 24 hours to the run date
+//			DatabaseManager.InsertSimulation(this);
+//		}
 	}
 
 	public void SetID(int _id) 
@@ -231,16 +221,16 @@ public class Simulation
 	
 	private String GetDateString()
 	{
-		String month_string = (m_run_date.get(Calendar.MONTH) + 1 < 10) ? "0" + Integer.toString(m_run_date.get(Calendar.MONTH) + 1) : Integer.toString(m_run_date.get(Calendar.MONTH) + 1);
-		String day_string = (m_run_date.get(Calendar.DAY_OF_MONTH) < 10) ? "0" + Integer.toString(m_run_date.get(Calendar.DAY_OF_MONTH)) : Integer.toString(m_run_date.get(Calendar.DAY_OF_MONTH));
-		return Integer.toString(m_run_date.get(Calendar.YEAR)) + month_string + day_string;
+		return m_run.GetDateString();
 	}
 	
 	public String GenerateURL()
 	{
-		return "http://nomads.ncep.noaa.gov/pub/data/nccf/com/sref/prod/sref." + GetDateString() + 
-				"/" + m_run.getValue() + "/pgrb/sref_" + m_simulate_model.getValue() + ".t" + m_run.getValue() + "z.pgrb" + 
-				m_resolution.getValue() + "." + m_perturbation .getValue() + ".f" + m_forcast_hour.getValue() + ".grib2";
+		String url = "http://nomads.ncep.noaa.gov/cgi-bin/filter_sref_" + m_resolution.getValue() + ".pl?file=sref_" + m_simulate_model.getValue() + ".t" + m_run.GetRunValue() + "z.pgrb" + m_resolution.getValue() + "." + m_perturbation .getValue() + ".f" + m_forecast_hour.getValue() + ".grib2&lev_10_m_above_ground=on&lev_2_m_above_ground=on&lev_500_mb=on&lev_750_mb=on&lev_surface=on&var_APCP=on&var_HGT=on&var_RH=on&var_TMP=on&var_UGRD=on&var_VGRD=on&leftlon=0&rightlon=0&toplat=0&bottomlat=0&dir=%2Fsref." + GetDateString() + "%2F" + m_run.GetRunValue() + "%2Fpgrb";
+		return url;
+//		return "http://nomads.ncep.noaa.gov/pub/data/nccf/com/sref/prod/sref." + GetDateString() + 
+//				"/" + m_run.getValue() + "/pgrb/sref_" + m_simulate_model.getValue() + ".t" + m_run.getValue() + "z.pgrb" + 
+//				m_resolution.getValue() + "." + m_perturbation .getValue() + ".f" + m_forcast_hour.getValue() + ".grib2";
 	}
 	
 	public String GetFileName()
@@ -250,14 +240,66 @@ public class Simulation
 		{
 			file_path.mkdirs();
 		}
-		return DOWNLOADS_PATH + GetDateString() + "." + m_run.getValue() + "." + m_simulate_model.getValue() + "." + m_run.getValue() + "." + 
-				m_resolution.getValue() + "." + m_perturbation.getValue() + "." + m_forcast_hour.getValue();
+		return DOWNLOADS_PATH + GetDateString() + "." + m_run.GetRunValue() + "." + m_simulate_model.getValue() + "." + m_run.GetRunValue() + "." + 
+				m_resolution.getValue() + "." + m_perturbation.getValue() + "." + m_forecast_hour.getValue();
 	}
 
 	public boolean IsDownloaded() 
 	{
 		File file = new File(GetFileName());
 		return file.exists();
+	}
+
+	public synchronized void ExtractAndAddToDatabase() 
+	{
+		String command = "/usr/local/grib2/wgrib2/wgrib2 " + GetFileName() + " -inv /dev/null -csv -";
+		
+		try 
+		{
+//			ProcessBuilder pb = new ProcessBuilder("/usr/local/grib2/wgrib2/wgrib2", GetFileName(), "-inv /dev/null", "-csv", "-")
+            Runtime rt = Runtime.getRuntime();
+            //Process pr = rt.exec("cmd /c dir");
+            Process pr = rt.exec(command);
+
+            BufferedReader input = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+
+            String line=null;
+            String db_string = "INSERT INTO weathervane.run_" + this.GetDateString() + "_" + m_run.GetRunValue() + " (forecast,model,grid,perturbation,forecast_hour,`index`,value,var,height) VALUES";
+
+            StringBuilder builder = new StringBuilder();
+            
+            int index = 0;
+            while((line=input.readLine()) != null) 
+            {
+            	if (index % 100000 == 0)
+            	{
+            		if (index > 0)
+            		{
+            			int comma_index = builder.lastIndexOf(", ");
+                        builder.replace(builder.lastIndexOf(","), comma_index + 1, "");
+            			DatabaseManager.ExecuteStatement(builder.toString());
+            		}
+            		builder = new StringBuilder();
+            		builder.append(db_string);
+            	}
+            	String[] split_string = line.split(",");
+            	String value = split_string[6];
+            	String var = split_string[2].replace("\"", "");
+            	String height = split_string[3].replace("\"", "");
+            	
+            	builder.append("('" + m_run.GetForecastValue() + "','" + m_simulate_model.getValue() + "','" + 
+                		m_resolution.getValue() + "','" + m_perturbation.getValue() + "','" + m_forecast_hour.getValue() + "'," + index + ",'" + value +"','" + var + "','" + height + "'), ");
+                ++index;
+            }
+            int comma_index = builder.lastIndexOf(", ");
+            builder.replace(builder.lastIndexOf(","), comma_index + 1, "");
+            DatabaseManager.ExecuteStatement(builder.toString());
+        } 
+		catch(Exception e) 
+        {
+            System.out.println(e.toString());
+            e.printStackTrace();
+        }
 	}
 	
 }

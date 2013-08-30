@@ -27,23 +27,26 @@ public class DownloadManager
 		
 		public void run()
 		{	
-			while (true)
-			{			
-				try
-				{
-					Simulation simulation = DatabaseManager.GetNextReadySimulation();
-					if (simulation != null)
-					{
-						simulation.Download();
-						DatabaseManager.DeleteSimulation(simulation);
-					}
-					Thread.sleep(1000); // sleep for 1 second before checking again
-				}
-				catch (Exception exc)
-				{
-				exc.printStackTrace();
-				}
-			}
+//			while (true)
+//			{			
+//				try
+//				{
+//					Simulation simulation = DatabaseManager.GetNextReadySimulation();
+//					if (simulation != null)
+//					{
+//						simulation.Download();
+//						DatabaseManager.RemoveSimulation(simulation);
+//					}
+//					else
+//					{
+//						Thread.sleep(1000); // sleep for 1 second before checking again
+//					}
+//				}
+//				catch (Exception exc)
+//				{
+//				exc.printStackTrace();
+//				}
+//			}
 		}
 		
 	}
