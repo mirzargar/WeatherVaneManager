@@ -2,20 +2,25 @@ package sci.weathervane.downloaders;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.sql.Date;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
 
 import org.apache.commons.io.*;
 
 import sci.weathervane.database.DatabaseManager;
+import sci.weathervane.downloaders.Run.HEIGHT;
 import sci.weathervane.downloaders.Run.VAR;
 
 public class Simulation 
 {
-	public static final String DOWNLOADS_PATH = "/tmp/weathervane/";
 	
 	private int m_id;
 	private Run m_run;
@@ -153,11 +158,6 @@ public class Simulation
 		return m_perturbation.getValue();
 	}
 	
-//	public long GetRunDateInMilliseconds()
-//	{
-//		return m_run.GetRunDateInMilliseconds();
-//	}
-	
 	public String GetForcastHour()
 	{
 		return m_forecast_hour.getValue(); 
@@ -205,13 +205,7 @@ public class Simulation
 
 	public void Download() 
 	{
-		DownloadFile(GenerateURL(), GetFileName());
-//		DatabaseManager.RemoveSimulation(this);
-//		if (m_repeat)
-//		{
-//			this.m_run_date.add(Calendar.HOUR, 24); // add 24 hours to the run date
-//			DatabaseManager.InsertSimulation(this);
-//		}
+		DownloadFile(GenerateURL(), GetDownloadFilePath());
 	}
 
 	public void SetID(int _id) 
@@ -226,80 +220,165 @@ public class Simulation
 	
 	public String GenerateURL()
 	{
-		String url = "http://nomads.ncep.noaa.gov/cgi-bin/filter_sref_" + m_resolution.getValue() + ".pl?file=sref_" + m_simulate_model.getValue() + ".t" + m_run.GetRunValue() + "z.pgrb" + m_resolution.getValue() + "." + m_perturbation .getValue() + ".f" + m_forecast_hour.getValue() + ".grib2&lev_10_m_above_ground=on&lev_2_m_above_ground=on&lev_500_mb=on&lev_750_mb=on&lev_surface=on&var_APCP=on&var_HGT=on&var_RH=on&var_TMP=on&var_UGRD=on&var_VGRD=on&leftlon=0&rightlon=0&toplat=0&bottomlat=0&dir=%2Fsref." + GetDateString() + "%2F" + m_run.GetRunValue() + "%2Fpgrb";
-		return url;
-//		return "http://nomads.ncep.noaa.gov/pub/data/nccf/com/sref/prod/sref." + GetDateString() + 
-//				"/" + m_run.getValue() + "/pgrb/sref_" + m_simulate_model.getValue() + ".t" + m_run.getValue() + "z.pgrb" + 
-//				m_resolution.getValue() + "." + m_perturbation .getValue() + ".f" + m_forcast_hour.getValue() + ".grib2";
+		return "http://nomads.ncep.noaa.gov/cgi-bin/filter_sref_" + m_resolution.getValue() + ".pl?file=sref_" + m_simulate_model.getValue() + ".t" + m_run.GetRunValue() + "z.pgrb" + m_resolution.getValue() + "." + m_perturbation .getValue() + ".f" + m_forecast_hour.getValue() + ".grib2&lev_10_m_above_ground=on&lev_2_m_above_ground=on&lev_500_mb=on&lev_750_mb=on&lev_surface=on&var_APCP=on&var_HGT=on&var_RH=on&var_TMP=on&var_UGRD=on&var_VGRD=on&leftlon=0&rightlon=0&toplat=0&bottomlat=0&dir=%2Fsref." + GetDateString() + "%2F" + m_run.GetRunValue() + "%2Fpgrb";
 	}
 	
-	public String GetFileName()
+	public String GetProcessedFilePath()
 	{
-		File file_path = new File(DOWNLOADS_PATH);
+		String processed_path = PathToProcessedFiles();
+		File file_path = new File(processed_path);
 		if (!file_path.exists())
 		{
 			file_path.mkdirs();
 		}
-		return DOWNLOADS_PATH + GetDateString() + "." + m_run.GetRunValue() + "." + m_simulate_model.getValue() + "." + m_run.GetRunValue() + "." + 
+		return processed_path + m_simulate_model.getValue() + "." + m_perturbation.getValue() + "." + m_forecast_hour.getValue();
+	}
+	
+	public String GetDownloadFilePath()
+	{
+		String download_path = PathToDownloadedFiles();
+		File file_path = new File(download_path);
+		if (!file_path.exists())
+		{
+			file_path.mkdirs();
+		}
+		return download_path + GetDateString() + "." + m_run.GetRunValue() + "." + m_simulate_model.getValue() + "." + 
 				m_resolution.getValue() + "." + m_perturbation.getValue() + "." + m_forecast_hour.getValue();
 	}
 
 	public boolean IsDownloaded() 
 	{
-		File file = new File(GetFileName());
+		File file = new File(GetDownloadFilePath());
 		return file.exists();
 	}
 
 	public synchronized void ExtractAndAddToDatabase() 
 	{
-		String command = "/usr/local/grib2/wgrib2/wgrib2 " + GetFileName() + " -inv /dev/null -csv -";
+		String command = PathToWgrib2() + " " + GetDownloadFilePath() + " -inv /dev/null -csv -";
+//		String command = PathToWgrib2() + " -match \":TMP\" " + GetDownloadFilePath() + " -csv " + GetProcessedFilePath();
 		
 		try 
 		{
-//			ProcessBuilder pb = new ProcessBuilder("/usr/local/grib2/wgrib2/wgrib2", GetFileName(), "-inv /dev/null", "-csv", "-")
             Runtime rt = Runtime.getRuntime();
-            //Process pr = rt.exec("cmd /c dir");
             Process pr = rt.exec(command);
+//            pr.waitFor();
+            
+            DatabaseManager.CreateSimulationTable(this);
+            
+//            String statement = "load data local infile 'uniq.csv' into table " + m_run.GetTableName() + " fields terminated by ',' enclosed by '\"' lines terminated by '\n' (uniqName, uniqCity, uniqComments)";
+//            DatabaseManager.ExecuteStatement(statement);
 
             BufferedReader input = new BufferedReader(new InputStreamReader(pr.getInputStream()));
 
-            String line=null;
-            String db_string = "INSERT INTO weathervane.run_" + this.GetDateString() + "_" + m_run.GetRunValue() + " (forecast,model,grid,perturbation,forecast_hour,`index`,value,var,height) VALUES";
-
             StringBuilder builder = new StringBuilder();
             
-            int index = 0;
-            while((line=input.readLine()) != null) 
+//            FileInputStream fisTargetFile = new FileInputStream(new File(GetProcessedFilePath()));
+//            String targetFileStr = IOUtils.toString(fisTargetFile, "UTF-8");
+            
+            String line;
+            HashMap<Integer, HashMap<String, String>> data_map = new HashMap<Integer, HashMap<String, String>>();
+            HashMap<String, Integer> lat_lon_map = new HashMap<String, Integer>();
+//            List<String> lines = IOUtils.readLines(fisTargetFile);
+//            for (String line : IOUtils.readLines(fisTargetFile)) 
+            long start = System.currentTimeMillis();
+            int counter = 0;
+            while ((line = input.readLine()) != null)
             {
-            	if (index % 100000 == 0)
-            	{
-            		if (index > 0)
-            		{
-            			int comma_index = builder.lastIndexOf(", ");
-                        builder.replace(builder.lastIndexOf(","), comma_index + 1, "");
-            			DatabaseManager.ExecuteStatement(builder.toString());
-            		}
-            		builder = new StringBuilder();
-            		builder.append(db_string);
-            	}
             	String[] split_string = line.split(",");
+            	String lat_lon = split_string[4] + "_" + split_string[5];
+            	Integer index = lat_lon_map.get(lat_lon);
+            	if (index == null) { index = counter; }
+            	HashMap<String, String> values = data_map.get(index);
+            	String insert_string = "";
+            	if (values == null)
+            	{
+            		values = new HashMap<String, String>();
+//            		insert_string = "(" +  + ")";
+            	}
             	String value = split_string[6];
             	String var = split_string[2].replace("\"", "");
             	String height = split_string[3].replace("\"", "");
-            	
-            	builder.append("('" + m_run.GetForecastValue() + "','" + m_simulate_model.getValue() + "','" + 
-                		m_resolution.getValue() + "','" + m_perturbation.getValue() + "','" + m_forecast_hour.getValue() + "'," + index + ",'" + value +"','" + var + "','" + height + "'), ");
-                ++index;
+            	values.put(height + "_" +  var, value);
+            	data_map.put(index, values);
+            	++counter;
             }
-            int comma_index = builder.lastIndexOf(", ");
-            builder.replace(builder.lastIndexOf(","), comma_index + 1, "");
-            DatabaseManager.ExecuteStatement(builder.toString());
+            long end = System.currentTimeMillis();
+            long minutes = (end - start) / 60000;
+            System.out.println("Completed in " + minutes + " minutes");
+            String[] keys = new String[HEIGHT.values().length * VAR.values().length];
+            int count = 0;
+            for (HEIGHT height : HEIGHT.values())
+        	{
+        		for (VAR var : VAR.values())
+        		{
+        			keys[count++] = height.getValue() + "_" + var.getValue();
+        		}
+        	}
+            for (int i = 0; i < data_map.size(); ++i)
+            {
+            	HashMap<String, String> map = data_map.get(i);
+            	for (String key : keys)
+            	{
+            		String value = map.get(key);
+            		
+            	}
+            }
         } 
 		catch(Exception e) 
         {
             System.out.println(e.toString());
             e.printStackTrace();
         }
+	}
+	
+	public static String PathToWgrib2()
+	{
+		String os = System.getProperty("os.name").toLowerCase();
+		String path = "";
+		if (os.indexOf("win") >= 0)
+		{
+			path = "C:\\Program Files (x86)\\wgrib\\wgrib2.exe";
+		}
+		else if (os.indexOf("mac") >= 0 || os.indexOf("nix") >= 0 || os.indexOf("nux") >= 0 || os.indexOf("aix") >= 0) // is mac or windows
+		{
+			path = "/usr/local/grib2/wgrib2/wgrib2";
+		}
+		return path;
+	}
+	
+	public static String PathToDownloadedFiles()
+	{
+		String os = System.getProperty("os.name").toLowerCase();
+		String path = "";
+		if (os.indexOf("win") >= 0)
+		{
+			path = "C:\\Users\\Public\\weathervane\\downloads\\";
+		}
+		else if (os.indexOf("mac") >= 0 || os.indexOf("nix") >= 0 || os.indexOf("nux") >= 0 || os.indexOf("aix") >= 0) // is mac or windows
+		{
+			path = "~/weathervane/downloads/";
+		}
+		return path;
+	}
+	
+	public static String PathToProcessedFiles()
+	{
+		String os = System.getProperty("os.name").toLowerCase();
+		String path = "";
+		if (os.indexOf("win") >= 0)
+		{
+			path = "C:\\Users\\Public\\weathervane\\processed\\";
+		}
+		else if (os.indexOf("mac") >= 0 || os.indexOf("nix") >= 0 || os.indexOf("nux") >= 0 || os.indexOf("aix") >= 0) // is mac or windows
+		{
+			path = "~/weathervane/processed/";
+		}
+		return path;
+	}
+
+	public String GetTableName()
+	{
+		return m_run.GetDateString() + "_" + m_run.GetRunValue() + "_" + m_simulate_model.getValue() + "_" + m_perturbation.getValue() + "_" + m_forecast_hour.getValue();
 	}
 	
 }
