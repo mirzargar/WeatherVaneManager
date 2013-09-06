@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.PreparedStatement;
+import java.util.HashMap;
 
 import sci.weathervane.downloaders.Run;
 import sci.weathervane.downloaders.Run.HEIGHT;
@@ -285,18 +286,62 @@ public class DatabaseManager
 		ExecuteStatement(statement);
 	}
 	
-	public static void CreateSimulationTable(Simulation simulation)
+	public static String GetSimulationInsertRowString(Integer index, Simulation simulation)
 	{
-		String fields = "`index` INT NOT NULL,";
+		String row = "(" + index.toString() + ",";
 		for (HEIGHT height : HEIGHT.values())
 		{
 			for (VAR var : VAR.values())
 			{
-				fields += "`" + height.getValue().replace(" ", "-") + "_" + var.getValue().replace(" ", "-") + "` DOUBLE,";
+				row += SimulationValuePlaceHolder(height.getValue(), var.getValue()) + ",";
 			}
 		}
-		String statement = "CREATE TABLE weathervane." + simulation.GetTableName() + "(" + fields + " PRIMARY KEY (`index`))";
-		ExecuteStatement(statement);
+		return row.substring(0, row.length() - 1) + ")";
+	}
+	
+	public static String SimulationValuePlaceHolder(String height, String var)
+	{
+		String field = "%" + height + "@" + var + "%";
+		return field;
+	}
+	
+	public static void CreateSimulationTable(Simulation simulation, HashMap<Integer, String> simulation_rows)
+	{
+		ExecuteStatement("DROP TABLE weathervane." + simulation.GetTableName());
+		
+		String create_fields = "`index` INT NOT NULL,";
+		String insert_fields = "`index`,";
+		for (HEIGHT height : HEIGHT.values())
+		{
+			for (VAR var : VAR.values())
+			{
+				String field_name = height.getValue().replace(" ", "-") + "_" + var.getValue().replace(" ", "-");
+				create_fields += "`" + field_name + "` DOUBLE,";
+				insert_fields += "`" + field_name + "`,";
+			}
+		}
+		
+		ExecuteStatement("CREATE TABLE weathervane." + simulation.GetTableName() + "(" + create_fields + " PRIMARY KEY (`index`))");
+		
+		insert_fields = insert_fields.substring(0, insert_fields.length() - 1);
+//		StringBuilder builder = new StringBuilder();
+//		builder.append("CREATE TABLE weathervane." + simulation.GetTableName() + "(" + create_fields + " PRIMARY KEY (`index`))");
+		
+		String insert_string = "INSERT INTO weathervane." + simulation.GetTableName() + " (" + insert_fields + ") VALUES ";
+		int counter = 0;
+		StringBuilder insert_statement = new StringBuilder();
+		insert_statement.append(insert_string);
+        while (counter < simulation_rows.size())
+        {
+        	insert_statement.append(simulation_rows.get(counter).replaceAll("%[^%]+%", "null") + ",");
+        	if (counter > 0 && counter % 5000 == 0 || counter == simulation_rows.size() -1)
+        	{
+        		ExecuteStatement(insert_statement.substring(0, insert_statement.length() - 1));
+        		insert_statement = new StringBuilder();
+        		insert_statement.append(insert_string);
+        	}
+        	++counter;
+        }
 	}
 	
 	public static boolean ExecuteStatement(String statement)

@@ -251,7 +251,7 @@ public class Simulation
 		File file = new File(GetDownloadFilePath());
 		return file.exists();
 	}
-
+	
 	public synchronized void ExtractAndAddToDatabase() 
 	{
 		String command = PathToWgrib2() + " " + GetDownloadFilePath() + " -inv /dev/null -csv -";
@@ -259,27 +259,13 @@ public class Simulation
 		
 		try 
 		{
-            Runtime rt = Runtime.getRuntime();
+			Runtime rt = Runtime.getRuntime();
             Process pr = rt.exec(command);
-//            pr.waitFor();
-            
-            DatabaseManager.CreateSimulationTable(this);
-            
-//            String statement = "load data local infile 'uniq.csv' into table " + m_run.GetTableName() + " fields terminated by ',' enclosed by '\"' lines terminated by '\n' (uniqName, uniqCity, uniqComments)";
-//            DatabaseManager.ExecuteStatement(statement);
-
             BufferedReader input = new BufferedReader(new InputStreamReader(pr.getInputStream()));
-
-            StringBuilder builder = new StringBuilder();
-            
-//            FileInputStream fisTargetFile = new FileInputStream(new File(GetProcessedFilePath()));
-//            String targetFileStr = IOUtils.toString(fisTargetFile, "UTF-8");
             
             String line;
-            HashMap<Integer, HashMap<String, String>> data_map = new HashMap<Integer, HashMap<String, String>>();
-            HashMap<String, Integer> lat_lon_map = new HashMap<String, Integer>();
-//            List<String> lines = IOUtils.readLines(fisTargetFile);
-//            for (String line : IOUtils.readLines(fisTargetFile)) 
+            HashMap<String, Integer> lat_lon_map = new HashMap<String, Integer>(); // this maps the lat_lon to a 0-based index
+            HashMap<Integer, String> insert_map = new HashMap<Integer, String>(); // this maps the 0-based index to an insert string
             long start = System.currentTimeMillis();
             int counter = 0;
             while ((line = input.readLine()) != null)
@@ -287,42 +273,30 @@ public class Simulation
             	String[] split_string = line.split(",");
             	String lat_lon = split_string[4] + "_" + split_string[5];
             	Integer index = lat_lon_map.get(lat_lon);
-            	if (index == null) { index = counter; }
-            	HashMap<String, String> values = data_map.get(index);
-            	String insert_string = "";
-            	if (values == null)
-            	{
-            		values = new HashMap<String, String>();
-//            		insert_string = "(" +  + ")";
+            	
+            	if (index == null) 
+            	{ 
+            		index = counter;
+            		lat_lon_map.put(lat_lon, index);
             	}
-            	String value = split_string[6];
-            	String var = split_string[2].replace("\"", "");
-            	String height = split_string[3].replace("\"", "");
-            	values.put(height + "_" +  var, value);
-            	data_map.put(index, values);
+            	String insert_string = insert_map.get(index);
+            	if (insert_string == null)
+            	{
+            		insert_string = DatabaseManager.GetSimulationInsertRowString(index, this);
+            	}
+            	insert_map.put(index, insert_string.replace(DatabaseManager.SimulationValuePlaceHolder(split_string[3].replace("\"", ""), split_string[2].replace("\"", "")), GetInsertValue(split_string[2], split_string[6])));
             	++counter;
             }
             long end = System.currentTimeMillis();
             long minutes = (end - start) / 60000;
-            System.out.println("Completed in " + minutes + " minutes");
-            String[] keys = new String[HEIGHT.values().length * VAR.values().length];
-            int count = 0;
-            for (HEIGHT height : HEIGHT.values())
-        	{
-        		for (VAR var : VAR.values())
-        		{
-        			keys[count++] = height.getValue() + "_" + var.getValue();
-        		}
-        	}
-            for (int i = 0; i < data_map.size(); ++i)
-            {
-            	HashMap<String, String> map = data_map.get(i);
-            	for (String key : keys)
-            	{
-            		String value = map.get(key);
-            		
-            	}
-            }
+            System.out.println("Grib filter completed in " + minutes + " minutes");
+            
+            start = System.currentTimeMillis();
+            DatabaseManager.CreateSimulationTable(this, insert_map);
+            end = System.currentTimeMillis();
+            minutes = (end - start) / 60000;
+            System.out.println("Insert " + insert_map.size() +" rows completed in " + minutes + " minutes");
+            int x = 0;
         } 
 		catch(Exception e) 
         {
@@ -330,7 +304,29 @@ public class Simulation
             e.printStackTrace();
         }
 	}
-	
+
+	private String GetInsertValue(String var, String value)
+	{
+		String return_value = value;
+//		VAR var_enum = VAR.valueOf(var);
+//		switch (var_enum)
+//		{
+//		case APCP:
+//			break;
+//		case HGT:
+//			break;
+//		case RH:
+//			break;
+//		case TMP:
+//			break;
+//		case UGRD:
+//			break;
+//		case VGRD:
+//			break;
+//		}
+		return return_value;
+	}
+
 	public static String PathToWgrib2()
 	{
 		String os = System.getProperty("os.name").toLowerCase();

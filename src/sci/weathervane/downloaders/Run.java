@@ -81,6 +81,33 @@ public class Run
 	    	enum_string = (enum_string.length() > 0) ? enum_string.substring(0, enum_string.lastIndexOf(',')) : ""; // remove the last ','
 	    	return "ENUM(" + enum_string + ")";
 	    }
+	    
+	    public String GetFieldType()
+		{
+			String field_name = "";
+			switch (this)
+			{
+			case APCP:
+				field_name = "INT";
+				break;
+			case HGT:
+				field_name = "DOUBLE";
+				break;
+			case RH:
+				field_name = "INT";
+				break;
+			case TMP:
+				field_name = "DOUBLE";
+				break;
+			case UGRD:
+				field_name = "DOUBLE";
+				break;
+			case VGRD:
+				field_name = "DOUBLE";
+				break;
+			}
+			return field_name;
+		}
 	}
 	
 	public Run(Calendar _date, RUN _run, FORECAST _forecast, boolean _repeat)
@@ -124,7 +151,7 @@ public class Run
 	public boolean DownloadAndProcessSimulations()
 	{
 		long start = System.currentTimeMillis();
-		for (int i = 0; i < 1; ++i)
+		for (int i = 0; i < 3; ++i)
 		{
 			DownloadSimulationThread t1 = new DownloadSimulationThread();
 			t1.start();
