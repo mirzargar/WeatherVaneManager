@@ -1,15 +1,7 @@
 package sci.weathervane.startup;
 
-import java.util.Calendar;
-
-import sci.weathervane.database.DatabaseManager;
-import sci.weathervane.downloaders.DownloadManager;
 import sci.weathervane.downloaders.Run;
-import sci.weathervane.downloaders.Run.FORECAST;
-import sci.weathervane.downloaders.Run.RUN;
-import sci.weathervane.downloaders.Simulation;
-import sci.weathervane.downloaders.DownloadableFactory;
-import sci.weathervane.services.*;
+import sci.weathervane.downloaders.RunManager;
 
 public class Main 
 {
@@ -19,19 +11,12 @@ public class Main
 	 */
 	public static void main(String[] args) 
 	{
-		DatabaseManager.ClearTable("simulation");
-		DownloadRuns();
-//		DownloadManager.StartDownloadManager();
-	}
-	
-	private static void DownloadRuns()
-	{
-		for (RUN run : RUN.values())
+		if (args.length > 0)
 		{
-			Calendar calendar = Calendar.getInstance();
-			Run run_obj = new Run(calendar, run, FORECAST.SREF, true);
-			run_obj.DownloadAndProcessSimulations();
+			String path = (args[0].endsWith("/")) ? args[0] : args[0] + "/";
+			Run.SetRootApplicationPath(path);
 		}
+		RunManager.Instance().StartService();
 	}
 
 }

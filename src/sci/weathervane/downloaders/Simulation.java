@@ -2,22 +2,12 @@ package sci.weathervane.downloaders;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.net.URL;
-import java.nio.charset.Charset;
-import java.sql.Date;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.List;
+//import java.util.HashMap;
 
 import org.apache.commons.io.*;
-
-import sci.weathervane.database.DatabaseManager;
-import sci.weathervane.downloaders.Run.HEIGHT;
-import sci.weathervane.downloaders.Run.VAR;
 
 public class Simulation 
 {
@@ -57,7 +47,9 @@ public class Simulation
 	
 	public enum RESOLUTION
 	{
-		RESOLUTION_132 (132);
+		RESOLUTION_132 (132),
+		RESOLUTION_221 (221),
+		RESOLUTION_212 (212);
 		
 		private final int resolution;
 		RESOLUTION(int resolution) { this.resolution = resolution; }
@@ -133,6 +125,48 @@ public class Simulation
 	    }
 	}
 	
+	public enum HEIGHT
+	{
+	    mb500 ("500 mb"),
+	    mb700 ("700 mb");
+
+	    private final String name;       
+
+	    private HEIGHT(String s) 
+	    {
+	        name = s;
+	    }
+
+	    public String getValue()
+	    {
+	       return name;
+	    }
+	}
+	
+	public enum FIELD
+	{
+	    TMP ("TMP"),
+//	    RH ("RH"),
+	    HGT ("HGT");
+
+	    private final String name;       
+
+	    private FIELD(String s) 
+	    {
+	        name = s;
+	    }
+
+	    public String getValue()
+	    {
+	       return name;
+	    }
+	}
+	
+	private String GetFieldAndHeightCommand(FIELD field, HEIGHT height)
+	{
+		return ":" + field.getValue() + ":" + height.getValue();
+	}
+	
 	public int GetID()
 	{
 		return m_id;
@@ -174,7 +208,7 @@ public class Simulation
 	}
 	
 	public Simulation(Run _run, SIMULATE_MODEL _simulate_model, RESOLUTION _resolution, PERTURBATION _perturbation, FORCAST_HOUR _forcast_hour, boolean _priority, boolean _repeat)
-	{
+	{	
 		this.m_run = _run;
 		this.m_simulate_model = _simulate_model;
 		this.m_resolution = _resolution;
@@ -220,30 +254,43 @@ public class Simulation
 	
 	public String GenerateURL()
 	{
-		return "http://nomads.ncep.noaa.gov/cgi-bin/filter_sref_" + m_resolution.getValue() + ".pl?file=sref_" + m_simulate_model.getValue() + ".t" + m_run.GetRunValue() + "z.pgrb" + m_resolution.getValue() + "." + m_perturbation .getValue() + ".f" + m_forecast_hour.getValue() + ".grib2&lev_10_m_above_ground=on&lev_2_m_above_ground=on&lev_500_mb=on&lev_750_mb=on&lev_surface=on&var_APCP=on&var_HGT=on&var_RH=on&var_TMP=on&var_UGRD=on&var_VGRD=on&leftlon=0&rightlon=0&toplat=0&bottomlat=0&dir=%2Fsref." + GetDateString() + "%2F" + m_run.GetRunValue() + "%2Fpgrb";
+		if (m_resolution == RESOLUTION.RESOLUTION_221)
+		{
+			return "http://nomads.ncep.noaa.gov/cgi-bin/filter_sref_na.pl?file=sref_" + m_simulate_model.getValue() + ".t" + m_run.GetRunValue() + "z.pgrb" + m_resolution.getValue() + "." + m_perturbation .getValue() + ".f" + m_forecast_hour.getValue() + ".grib2&lev_10_m_above_ground=on&lev_2_m_above_ground=on&lev_500_mb=on&lev_700_mb=on&lev_surface=on&var_APCP=on&var_HGT=on&var_RH=on&var_TMP=on&var_UGRD=on&var_VGRD=on&leftlon=0&rightlon=0&toplat=0&bottomlat=0&dir=%2Fsref." + GetDateString() + "%2F" + m_run.GetRunValue() + "%2Fpgrb";
+		}
+		else if (m_resolution == RESOLUTION.RESOLUTION_212)
+		{
+			return "http://nomads.ncep.noaa.gov/cgi-bin/filter_sref.pl?file=sref_" + m_simulate_model.getValue() + ".t" + m_run.GetRunValue() + "z.pgrb" + m_resolution.getValue() + "." + m_perturbation .getValue() + ".f" + m_forecast_hour.getValue() + ".grib2&lev_10_m_above_ground=on&lev_2_m_above_ground=on&lev_500_mb=on&lev_700_mb=on&lev_surface=on&var_APCP=on&var_HGT=on&var_RH=on&var_TMP=on&var_UGRD=on&var_VGRD=on&leftlon=0&rightlon=0&toplat=0&bottomlat=0&dir=%2Fsref." + GetDateString() + "%2F" + m_run.GetRunValue() + "%2Fpgrb";
+		}
+		else
+		{
+			return "http://nomads.ncep.noaa.gov/cgi-bin/filter_sref_" + m_resolution.getValue() + ".pl?file=sref_" + m_simulate_model.getValue() + ".t" + m_run.GetRunValue() + "z.pgrb" + m_resolution.getValue() + "." + m_perturbation .getValue() + ".f" + m_forecast_hour.getValue() + ".grib2&lev_10_m_above_ground=on&lev_2_m_above_ground=on&lev_500_mb=on&lev_700_mb=on&lev_surface=on&var_APCP=on&var_HGT=on&var_RH=on&var_TMP=on&var_UGRD=on&var_VGRD=on&leftlon=0&rightlon=0&toplat=0&bottomlat=0&dir=%2Fsref." + GetDateString() + "%2F" + m_run.GetRunValue() + "%2Fpgrb";
+		}
 	}
 	
-	public String GetProcessedFilePath()
+	public String GetProcessedFilePath(FIELD field, HEIGHT height)
 	{
-		String processed_path = PathToProcessedFiles();
+		String processed_path = m_run.PathToProcessedFiles() + field.getValue().replace(" ", "") + "/" + height.getValue().replace(" ", "") + "/";
 		File file_path = new File(processed_path);
 		if (!file_path.exists())
 		{
 			file_path.mkdirs();
 		}
-		return processed_path + m_simulate_model.getValue() + "." + m_perturbation.getValue() + "." + m_forecast_hour.getValue();
+//		String processed_file_path = processed_path + m_simulate_model.getValue() + "." + m_resolution.getValue() + "." + m_perturbation.getValue() + "." + m_forecast_hour.getValue() + ".csv";
+		String processed_file_path = processed_path + "sref_" +  m_simulate_model.getValue() + ".t" + this.GetRun().GetRunValue() + "z.pgrb" + m_resolution.getValue() + "." + m_perturbation.getValue() + ".f" + m_forecast_hour.getValue() + ".txt";
+		return processed_file_path;
 	}
 	
 	public String GetDownloadFilePath()
 	{
-		String download_path = PathToDownloadedFiles();
+		String download_path = m_run.PathToDownloadedFiles();
 		File file_path = new File(download_path);
 		if (!file_path.exists())
 		{
 			file_path.mkdirs();
 		}
-		return download_path + GetDateString() + "." + m_run.GetRunValue() + "." + m_simulate_model.getValue() + "." + 
-				m_resolution.getValue() + "." + m_perturbation.getValue() + "." + m_forecast_hour.getValue();
+		String download_file_path = download_path + m_simulate_model.getValue() + "." + m_resolution.getValue() + "." + m_perturbation.getValue() + "." + m_forecast_hour.getValue();
+		return download_file_path;
 	}
 
 	public boolean IsDownloaded() 
@@ -252,79 +299,56 @@ public class Simulation
 		return file.exists();
 	}
 	
-	public synchronized void ExtractAndAddToDatabase() 
+	public synchronized void ProcessToCSV()
 	{
-		String command = PathToWgrib2() + " " + GetDownloadFilePath() + " -inv /dev/null -csv -";
-//		String command = PathToWgrib2() + " -match \":TMP\" " + GetDownloadFilePath() + " -csv " + GetProcessedFilePath();
-		
-		try 
+		for (FIELD field : FIELD.values())
 		{
-			Runtime rt = Runtime.getRuntime();
-            Process pr = rt.exec(command);
-            BufferedReader input = new BufferedReader(new InputStreamReader(pr.getInputStream()));
-            
-            String line;
-            HashMap<String, Integer> lat_lon_map = new HashMap<String, Integer>(); // this maps the lat_lon to a 0-based index
-            HashMap<Integer, String> insert_map = new HashMap<Integer, String>(); // this maps the 0-based index to an insert string
-            long start = System.currentTimeMillis();
-            int counter = 0;
-            while ((line = input.readLine()) != null)
-            {
-            	String[] split_string = line.split(",");
-            	String lat_lon = split_string[4] + "_" + split_string[5];
-            	Integer index = lat_lon_map.get(lat_lon);
-            	
-            	if (index == null) 
-            	{ 
-            		index = counter;
-            		lat_lon_map.put(lat_lon, index);
-            	}
-            	String insert_string = insert_map.get(index);
-            	if (insert_string == null)
-            	{
-            		insert_string = DatabaseManager.GetSimulationInsertRowString(index, this);
-            	}
-            	insert_map.put(index, insert_string.replace(DatabaseManager.SimulationValuePlaceHolder(split_string[3].replace("\"", ""), split_string[2].replace("\"", "")), GetInsertValue(split_string[2], split_string[6])));
-            	++counter;
-            }
-            long end = System.currentTimeMillis();
-            long minutes = (end - start) / 60000;
-            System.out.println("Grib filter completed in " + minutes + " minutes");
-            
-            start = System.currentTimeMillis();
-            DatabaseManager.CreateSimulationTable(this, insert_map);
-            end = System.currentTimeMillis();
-            minutes = (end - start) / 60000;
-            System.out.println("Insert " + insert_map.size() +" rows completed in " + minutes + " minutes");
-            int x = 0;
-        } 
-		catch(Exception e) 
-        {
-            System.out.println(e.toString());
-            e.printStackTrace();
-        }
+			for (HEIGHT height : HEIGHT.values())
+			{
+				String processed_filepath = GetProcessedFilePath(field, height);
+				String parameter = GetFieldAndHeightCommand(field, height);
+				String command = PathToWgrib2() + " -match \"" + parameter + "\" " + GetDownloadFilePath() + " -csv " + processed_filepath  + "_tmp" + "\n";
+		        try 
+		        {
+					ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
+					Process proc = pb.start();
+					
+					proc.waitFor();
+					cleanCSV(processed_filepath);
+					File tmp_file = new File(processed_filepath  + "_tmp");
+					tmp_file.delete();
+				} 
+		        catch (Exception e) 
+		        {
+					e.printStackTrace();
+				}
+				
+				
+			}
+		}
 	}
-
-	private String GetInsertValue(String var, String value)
+	
+	private void cleanCSV(String processed_filepath)
 	{
-		String return_value = value;
-//		VAR var_enum = VAR.valueOf(var);
-//		switch (var_enum)
-//		{
-//		case APCP:
-//			break;
-//		case HGT:
-//			break;
-//		case RH:
-//			break;
-//		case TMP:
-//			break;
-//		case UGRD:
-//			break;
-//		case VGRD:
-//			break;
-//		}
-		return return_value;
+		try
+		{
+			FileWriter f0 = new FileWriter(processed_filepath);
+
+			String newLine = System.getProperty("line.separator");
+			
+			BufferedReader br = new BufferedReader(new FileReader(processed_filepath + "_tmp"));
+
+			String line;
+			while ((line = br.readLine()) != null) 
+			{
+				String[] values = line.split(",");
+				f0.write(values[4] +"," +values[5] + "," + values[6] + newLine);
+			   // process the line.
+			}
+			br.close();
+			f0.close();
+		}
+		catch (Exception exc){}
 	}
 
 	public static String PathToWgrib2()
@@ -338,36 +362,6 @@ public class Simulation
 		else if (os.indexOf("mac") >= 0 || os.indexOf("nix") >= 0 || os.indexOf("nux") >= 0 || os.indexOf("aix") >= 0) // is mac or windows
 		{
 			path = "/usr/local/grib2/wgrib2/wgrib2";
-		}
-		return path;
-	}
-	
-	public static String PathToDownloadedFiles()
-	{
-		String os = System.getProperty("os.name").toLowerCase();
-		String path = "";
-		if (os.indexOf("win") >= 0)
-		{
-			path = "C:\\Users\\Public\\weathervane\\downloads\\";
-		}
-		else if (os.indexOf("mac") >= 0 || os.indexOf("nix") >= 0 || os.indexOf("nux") >= 0 || os.indexOf("aix") >= 0) // is mac or windows
-		{
-			path = "~/weathervane/downloads/";
-		}
-		return path;
-	}
-	
-	public static String PathToProcessedFiles()
-	{
-		String os = System.getProperty("os.name").toLowerCase();
-		String path = "";
-		if (os.indexOf("win") >= 0)
-		{
-			path = "C:\\Users\\Public\\weathervane\\processed\\";
-		}
-		else if (os.indexOf("mac") >= 0 || os.indexOf("nix") >= 0 || os.indexOf("nux") >= 0 || os.indexOf("aix") >= 0) // is mac or windows
-		{
-			path = "~/weathervane/processed/";
 		}
 		return path;
 	}

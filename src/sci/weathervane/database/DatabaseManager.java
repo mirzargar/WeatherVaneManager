@@ -7,7 +7,6 @@ import java.sql.PreparedStatement;
 import java.util.HashMap;
 
 import sci.weathervane.downloaders.Run;
-import sci.weathervane.downloaders.Run.HEIGHT;
 import sci.weathervane.downloaders.Run.VAR;
 import sci.weathervane.downloaders.Simulation;
 
@@ -282,14 +281,14 @@ public class DatabaseManager
 	
 	public static void CreateRunTable(Run run)
 	{
-		String statement = "CREATE TABLE weathervane." + run.GetTableName() + " (id INT NOT NULL AUTO_INCREMENT, forecast ENUM('GFS', 'SREF') NOT NULL, model ENUM('em', 'nmb', 'emm', 'nmm') NOT NULL, grid ENUM('132') NOT NULL, perturbation ENUM('ctl', 'n1', 'n2', 'n3', 'p1', 'p2', 'p3') NOT NULL, forecast_hour VARCHAR(2), `index` INT NOT NULL, value VARCHAR(100), var " + VAR.getEnumDatabaseString() + ", height " + HEIGHT.getEnumDatabaseString() + ", PRIMARY KEY (id))";
-		ExecuteStatement(statement);
+//		String statement = "CREATE TABLE weathervane." + run.GetTableName() + " (id INT NOT NULL AUTO_INCREMENT, forecast ENUM('GFS', 'SREF') NOT NULL, model ENUM('em', 'nmb', 'emm', 'nmm') NOT NULL, grid ENUM('132') NOT NULL, perturbation ENUM('ctl', 'n1', 'n2', 'n3', 'p1', 'p2', 'p3') NOT NULL, forecast_hour VARCHAR(2), `index` INT NOT NULL, value VARCHAR(100), var " + VAR.getEnumDatabaseString() + ", height " + Simulation.HEIGHT.getEnumDatabaseString() + ", PRIMARY KEY (id))";
+//		ExecuteStatement(statement);
 	}
 	
 	public static String GetSimulationInsertRowString(Integer index, Simulation simulation)
 	{
 		String row = "(" + index.toString() + ",";
-		for (HEIGHT height : HEIGHT.values())
+		for (Simulation.HEIGHT height : Simulation.HEIGHT.values())
 		{
 			for (VAR var : VAR.values())
 			{
@@ -311,7 +310,7 @@ public class DatabaseManager
 		
 		String create_fields = "`index` INT NOT NULL,";
 		String insert_fields = "`index`,";
-		for (HEIGHT height : HEIGHT.values())
+		for (Simulation.HEIGHT height : Simulation.HEIGHT.values())
 		{
 			for (VAR var : VAR.values())
 			{
