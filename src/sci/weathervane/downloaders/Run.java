@@ -1,7 +1,9 @@
 package sci.weathervane.downloaders;
 
 //import java.io.BufferedReader;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 //import java.io.InputStreamReader;
 import java.util.Calendar;
 import java.util.ArrayList;
@@ -273,25 +275,40 @@ public class Run
 		500MB, HGT, levelset = 5700
 		500MB, HGT, levelset = 5820
 	 */
-	private int CalculateLevelSet(Simulation.FIELD field, Simulation.HEIGHT height)
+	private ArrayList<Integer> GetLevelSets(FIELD field, HEIGHT height)
 	{
-		int level_set = 240;
-		if (field == FIELD.TMP)
+		ArrayList<Integer> level_sets = new ArrayList<Integer>();
+		switch (field)
 		{
-			if (height == HEIGHT.mb500)
+		case TMP:
+			// if the field is tmp the check the height and add the appropriate values to the list
+			switch (height)
 			{
-				level_set = 253;
+			case mb500:
+				level_sets.add(248);
+				level_sets.add(253);
+//				level_sets.add(258); // for future use
+				break;
+			case mb700:
+				level_sets.add(283);
+				level_sets.add(288);
+				break;
 			}
-			else if (height == HEIGHT.mb700)
+			break;
+		case HGT:
+			// if the field is hgt the check the height and add the appropriate values to the list
+			switch (height)
 			{
-				level_set = 288;
+			case mb500:
+				level_sets.add(5460);
+				level_sets.add(5580);
+//				level_sets.add(5700); // for future use
+//				level_sets.add(5820); // for future use
+				break;
 			}
+			break;
 		}
-		else if (field == FIELD.HGT)
-		{
-			level_set = 5580;
-		}
-		return level_set;
+		return level_sets;
 	}
 	
 	public void ProcessRun()
@@ -300,38 +317,41 @@ public class Run
 		{
 			for (Simulation.HEIGHT height : Simulation.HEIGHT.values())
 			{
-				int level_set = CalculateLevelSet(field, height);
-				String field_height_path = field.getValue().replace(" ", "") + "/" + height.getValue().replace(" ", "") + "/";
-				String svg_path = PathToSVGFiles() + field_height_path + level_set;
-				File svg_run_folder = new File(svg_path);
-				File processed_folder = new File(PathToProcessedFiles() + field_height_path);
-				if (!processed_folder.exists()) { continue; }
-				if (!svg_run_folder.exists())
+				for (int level_set : GetLevelSets(field, height))
 				{
-					svg_run_folder.mkdirs();
-				}
-				String command = GetSVGApplicationPath() + " " + PathToProcessedFiles() + field_height_path + "/ " + this.GetResolution() + " " + this.m_run.getValue() + " " + level_set + " " + svg_path + "/\n";
-		        try 
-		        {
-					ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
-					Process proc = pb.start();
-					proc.waitFor();
-					
-//					String output = "";
-//					String line = "";
-//					BufferedReader input = new BufferedReader
-//			            (new InputStreamReader(proc.getInputStream()));
-//			        while ((line = input.readLine()) != null) {
-//			            output += (line + '\n');
-//			        }
-//			        input.close();
-				} 
-		        catch (Exception e) 
-		        {
-					e.printStackTrace();
+					String field_height_path = field.getValue().replace(" ", "") + "/" + height.getValue().replace(" ", "") + "/";
+					String svg_path = PathToSVGFiles() + field_height_path + level_set;
+					File svg_run_folder = new File(svg_path);
+					File processed_folder = new File(PathToProcessedFiles() + field_height_path);
+					if (!processed_folder.exists()) { continue; }
+					if (!svg_run_folder.exists())
+					{
+						svg_run_folder.mkdirs();
+					}
+					String command = GetSVGApplicationPath() + " " + PathToProcessedFiles() + field_height_path + "/ " + this.GetResolution() + " " + this.m_run.getValue() + " " + level_set + " " + svg_path + "/\n";
+			        try 
+			        {
+						ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
+						Process proc = pb.start();
+						proc.waitFor();
+						
+						String output = "";
+						String line = "";
+						BufferedReader input = new BufferedReader
+				            (new InputStreamReader(proc.getInputStream()));
+				        while ((line = input.readLine()) != null) {
+				            output += (line + '\n');
+				        }
+				        input.close();
+					} 
+			        catch (Exception e) 
+			        {
+						e.printStackTrace();
+					}
 				}
 			}
 		}
+		int x = 0;
 	}
 	
 	private int GetResolution() 
