@@ -1,0 +1,31 @@
+<div id="form-container">
+	<select id="run-selector" class="weather-selector"><option value="">--Select a Run--</option></select>
+	<select id="height-selector" class="weather-selector"><option value="">-</option></select>
+	<select id="field-selector" class="weather-selector"><option value="">-</option></select>
+</div>
+
+<div id="svg-controls" class="hideme">
+
+	<div id="frame-controls">
+		<span id="step-back" class="svg-control-button" title="back one frame">|&lt;</span>
+		<span id="pause" class="svg-control-button" title="pause">||</span>
+		<span id="play" class="svg-control-button" title="play">&gt;</span>
+		<span id="step-forward" class="svg-control-button" title="forward one frame">&gt;|</span>
+	</div>
+	<div id="zoom-controls" class="hideme">
+		<span id="zoomiout" class="svg-control-button" onclick="zoomOut()">[-]</span>
+		<span id="zoom_1" class="zoom-indicator">|</span>
+		<span id="zoom_2" class="zoom-indicator">|</span>
+		<span id="zoom_3" class="zoom-indicator">|</span>
+		<span id="zoom_4" class="zoom-indicator">|</span>
+		<span id="zoom_5" class="zoom-indicator">|</span>
+		<span id="zoom_6" class="zoom-indicator">|</span>
+		<span id="zoomin" class="svg-control-button" onclick="zoomIn()">[+]</span>
+	</div>
+</div>
+<div class="clear"></div>
+<br />
+<h3 id="forcast_hour_header" class="hideme"> Forecast Hour: <label id="forecast_hour_label"></label></h3>
+<div id="svg-container" class=""></div><br />
+<img id="loading-image" class="hideme" src="<?php echo Model_Helpers_URL::AssetURL() ?>/images/l1.gif" alt="" />
+<div class="clear"></div>

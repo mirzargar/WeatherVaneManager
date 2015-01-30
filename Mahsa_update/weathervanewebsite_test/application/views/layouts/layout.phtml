@@ -1,0 +1,28 @@
+<?php echo $this->doctype(); ?>
+<html>
+	<head>
+		<script type="text/javascript">
+			$assetBaseUrl = '<?php echo Model_Helpers_URL::AssetURL(); ?>';
+			$navigationBaseUrl = '<?php echo Model_Helpers_URL::NavigationURL(); ?>';
+		</script>
+		<?php
+		$this->headLink()->prependStylesheet(Model_Helpers_URL::AssetURL() .'/styles/default.css');
+		$this->headLink()->prependStylesheet(Model_Helpers_URL::AssetURL() .'/styles/jquery-ui-1.8.23.custom.css');
+
+		//notice the reverse order, this allows us to append js files in the controllers and views
+		$this->headScript()->prependFile(Model_Helpers_URL::AssetURL() . '/scripts/common.js');
+		$this->headScript()->prependFile(Model_Helpers_URL::AssetURL() . '/scripts/jquery-ui-1.8.23.custom.min.js');
+		$this->headScript()->prependFile(Model_Helpers_URL::AssetURL() . '/scripts/jquery-1.8.0.min.js');
+
+		echo $this->headTitle();
+		echo $this->headLink();
+		echo $this->headScript();
+		?>
+	</head>
+	<body id="wrap">
+		<div id="header"></div>
+		<?php echo $this->layout()->content; ?>
+		<div id="footer">
+		</div>
+	</body>
+</html>
