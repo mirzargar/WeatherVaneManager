@@ -1,0 +1,140 @@
+.ui-widget{ font-size: 12px; }
+body
+{
+	margin: 0px;
+	padding: 0px;
+    font-size: .85em;
+    font-family: "Trebuchet MS", Verdana, Helvetica, Sans-Serif;
+    color: #232323;
+    background-color: #e8ebee;
+	background-position: center;
+}
+root { display: block; }
+
+#wrap
+{
+	width:800px;
+	margin: 0 auto;
+}
+
+.clear { clear: both; }
+.error { color: red; }
+.error-message { color: red; }
+input.error-input, select.error-input, textarea.error-input { background-color: salmon; }
+label.error-input, h1.error-input, h2.error-input, h3.error-input { color: red; }
+.hideme{ display: none; }
+h2.page_header { color: #e8ebee; font-size: 20pt; margin-top: 10px; }
+.ui-button-text
+{
+	border: 1px solid #768797;
+	color: #333;
+	font-weight: 900;
+}
+.float_right { float: right; }
+#header
+{
+	font-family: Arial, Helvetica, sans-serif;
+	text-align: center;
+	margin: 0;
+	padding: 0;
+	background-repeat: no-repeat;
+}
+.main-header
+{
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 40px;
+	text-align: center;
+}
+.secondary-header
+{
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 30px;
+	text-align: center;
+}
+#footer
+{
+/*	border-top: 1px solid #cccccc;
+	background-repeat: no-repeat;
+	margin: 20px;
+	padding: 20px;
+	display: table;*/
+	margin: 10px 20px 0px 20px;
+	border-top: 1px solid #cccccc;
+	text-align: center;
+}
+#footer img
+{
+	margin-top: 10px;
+}
+.footer-cell
+{
+	display: table-cell;
+}
+#footer-links
+{
+	text-align: left;
+}
+.red-border
+{
+	border: solid red 1px;
+}
+.weather-selector
+{
+	width: 140px;
+}
+#svg-container
+{
+	width: 100%;
+	height: 100%;
+	z-index: 100;
+	overflow: hidden;
+}
+#form-container
+{
+	width: 450px;
+}
+
+#svg-controls
+{
+	padding: 10px 0px 10px 0px;
+}
+#frame-controls
+{
+	float: left;
+}
+#zoom-controls
+{
+	float:right;
+}
+.bold-zoom
+{
+	font-weight: 900;
+	font-size: 15pt;
+}
+.svg-control-button
+{
+	display: inline-block;
+	cursor: pointer;
+	padding: 5px 8px;
+	border: 1px solid #768797;
+
+	/* disable the select */
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	/* disable the select */
+}
+
+svg { cursor: pointer;}
+
+.svg-control-button:hover
+{
+	background-color: #768797;
+}
+.svg_object
+{
+	/* margin: -2px; */
+}
