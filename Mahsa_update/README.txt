@@ -52,7 +52,9 @@ In order to get the webpage up:
  
 1) Install apache
 2) Modify the hard coded svg paths in application/controllers/IndexControler.php (2 places)
-3) Start apache (good luck with that on opensuse if you are not the root!)
+3) Start apache (good luck with that on opensuse if you are not the root!) - you should be able to do it by: 
+	sudo /usr/sbin/apache2ctl restart
+   if not, ask SCI suppport for it for you !
 4) Install and enable php (libapache2-mod-php5 and a2enmod php5) and make sure apache is recognizing php properly (you might need to restart apache - sudo /usr/sbin/apache2ctl (start/stop) )
 4) For opensuse, put everything inside WeatherVaneWebsite into /srv/www/htdocs (the path might be different one different systems)
 
